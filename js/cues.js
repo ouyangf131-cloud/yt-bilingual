@@ -30,19 +30,21 @@
     var m = s.match(/(?:youtu\.be\/|[?&]v=|\/(?:shorts|embed|live|v)\/)([A-Za-z0-9_-]{11})/);
     return m ? m[1] : null;
   }
-  // Decide which time to show subtitles for, given YT player state and getCurrentTime().
-  // During ads the IFrame API keeps reporting the content's id/duration but
-  // getCurrentTime() returns the AD clock, with state -1 (pre-roll) or 3 (mid-roll,
-  // "buffering" while time advances). Real buffering doesn't advance time.
-  // lastT = last time seen while PLAYING/PAUSED. Returns {t, ad, lastT}; t=-1 hides subs.
-  function effectiveTime(playerState, t, lastT) {
-    if (playerState === 1 || playerState === 2) return { t: t, ad: false, lastT: t };
+  // Decide which time to show subtitles for, given YT player state, getCurrentTime()
+  // and getMediaReferenceTime() (mrt; undefined if unavailable).
+  // During ads the IFrame API keeps reporting the content's id/duration, but
+  // getCurrentTime() returns the AD clock (state -1 for pre-roll, 1 or 3 for mid-roll),
+  // while getMediaReferenceTime() stays frozen at the content position. So:
+  //   |t - mrt| > 1.5s  => ad.  Fallbacks if mrt is unavailable: state -1 with a
+  //   running clock, or state 3 whose clock jumped away from the last content time.
+  // lastT = last content time seen. Returns {t, ad, lastT}; t = -1 hides subtitles.
+  function effectiveTime(playerState, t, mrt, lastT) {
+    var hasMrt = typeof mrt === "number" && isFinite(mrt);
+    if (hasMrt && Math.abs(t - mrt) > 1.5) return { t: -1, ad: true, lastT: lastT };
     if (playerState === -1) return { t: -1, ad: t > 0.5, lastT: lastT };
-    if (playerState === 3) {
-      if (lastT == null || Math.abs(t - lastT) < 1.5) return { t: t, ad: false, lastT: lastT };
+    if (playerState === 3 && !hasMrt && lastT != null && Math.abs(t - lastT) >= 1.5)
       return { t: -1, ad: true, lastT: lastT };
-    }
-    return { t: t, ad: false, lastT: lastT }; // 0 ended, 5 cued
+    return { t: t, ad: false, lastT: (playerState === 1 || playerState === 2) ? t : lastT };
   }
   var api = { findCueIndex: findCueIndex, displayIndex: displayIndex, parseYouTubeId: parseYouTubeId, effectiveTime: effectiveTime };
   if (typeof module !== "undefined" && module.exports) module.exports = api;

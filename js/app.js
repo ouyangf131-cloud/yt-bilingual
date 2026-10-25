@@ -93,15 +93,18 @@
   });
 
   // Poll player time; subtitles always derive from currentTime, so seeking stays in sync.
-  setInterval(function () {
+  setInterval(function () { try { tick(); } catch (err) { state.lastErr = String(err && err.stack || err); } }, 150);
+  function tick() {
     var t;
     if (state.timeOverride != null) t = state.timeOverride; // test hook: simulates getCurrentTime()
     else if (state.ready && state.player && state.player.getCurrentTime) {
-      var e = Cues.effectiveTime(state.player.getPlayerState(), state.player.getCurrentTime(), state.lastT);
-      state.lastT = e.lastT; t = e.t; adNotice(e.ad);
+      var pl = state.player, mrt;
+      try { mrt = pl.getMediaReferenceTime ? pl.getMediaReferenceTime() : undefined; } catch (err) { mrt = undefined; }
+      var e = Cues.effectiveTime(pl.getPlayerState(), pl.getCurrentTime(), mrt, state.lastT);
+      state.lastT = e.lastT; t = e.t; adNotice(e.ad); state.lastEff = e;
     } else return;
     if (typeof t === "number") render(t);
-  }, 150);
+  }
 
   window.onYouTubeIframeAPIReady = function () {
     state.player = new YT.Player("player", {

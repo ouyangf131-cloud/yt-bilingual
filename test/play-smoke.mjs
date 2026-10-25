@@ -8,7 +8,7 @@ let fails = 0;
 const sample = () => {
   const a = window.__app, pl = a.player, t = pl.getCurrentTime(), st = pl.getPlayerState();
   const i = Cues.displayIndex(a.cues, t, 1.0);
-  return { t, st, zh: document.getElementById("subZh").textContent, want: i >= 0 ? a.cues[i].zh : "",
+  return { t, st, mrt: pl.getMediaReferenceTime ? pl.getMediaReferenceTime() : null, eff: a.lastEff || null, err: a.lastErr || null, cur: a.cur, zh: document.getElementById("subZh").textContent, want: i >= 0 ? a.cues[i].zh : "",
            ad: document.getElementById("status").textContent.includes("广告") };
 };
 for (const [n, bt] of [["chromium", chromium], ["webkit", webkit]]) {
@@ -20,10 +20,18 @@ for (const [n, bt] of [["chromium", chromium], ["webkit", webkit]]) {
     for (const seek of [null, 215, 646.9, 20]) {
       if (seek != null) await p.evaluate(t => window.__app.player.seekTo(t, true), seek);
       let ads = 0, verified = null;
-      for (let k = 0; k < 60 && !verified; k++) {
+      for (let k = 0; k < 90 && !verified; k++) {
         await p.waitForTimeout(1000);
         const s = await p.evaluate(sample);
+        // ground truth (test only): YouTube marks its player .ad-showing while an ad runs
+        const fr = p.frames().find(f => f.url().includes("youtube.com/embed"));
+        s.trueAd = fr ? await fr.evaluate(() => !!document.querySelector(".html5-video-player.ad-showing")).catch(() => null) : null;
+        if (s.trueAd && s.zh) { console.log(n, "FAIL subtitle shown while YouTube ad-showing", JSON.stringify(s)); fails++; }
+        if (s.trueAd && !s.ad) console.log(n, "note: ad not flagged by page", JSON.stringify(s));
         if (s.ad) { ads++; if (s.zh) { console.log(n, "FAIL subtitle shown during ad", s); fails++; } continue; }
+        if (s.st === 1 && seek != null && Math.abs(s.t - seek) >= 10) {  // seek was swallowed by an ad: retry
+          await p.evaluate(t => window.__app.player.seekTo(t, true), seek); continue;
+        }
         if (s.st === 1 && (seek == null || Math.abs(s.t - seek) < 10)) {
           await p.waitForTimeout(400); const s2 = await p.evaluate(sample);
           if (s2.st === 1) verified = s2;
