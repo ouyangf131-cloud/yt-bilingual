@@ -43,7 +43,7 @@
   list.addEventListener("click", function (e) {
     var li = e.target.closest("li"); if (!li || !state.player || !state.ready) return;
     var c = state.cues[+li.dataset.i];
-    state.player.seekTo(c.start + 0.01, true); state.player.playVideo(); render(c.start + 0.01);
+    state.lastT = c.start; state.player.seekTo(c.start + 0.01, true); state.player.playVideo(); render(c.start + 0.01);
   });
 
   function loadSubs(id) {
@@ -65,7 +65,7 @@
   }
 
   function loadVideo(id) {
-    state.id = id;
+    state.id = id; state.lastT = null;
     try { history.replaceState(null, "", "?v=" + id); } catch (e) {}
     loadSubs(id);
     if (state.player && state.ready) state.player.cueVideoById(id);
@@ -97,11 +97,8 @@
     var t;
     if (state.timeOverride != null) t = state.timeOverride; // test hook: simulates getCurrentTime()
     else if (state.ready && state.player && state.player.getCurrentTime) {
-      // While a pre-roll ad plays, the IFrame API reports state -1 (unstarted) and
-      // getCurrentTime() returns the AD's time — hide subtitles then.
-      var ps = state.player.getPlayerState ? state.player.getPlayerState() : 1;
-      t = ps === -1 ? -1 : state.player.getCurrentTime();
-      adNotice(ps === -1 && state.player.getCurrentTime() > 0);
+      var e = Cues.effectiveTime(state.player.getPlayerState(), state.player.getCurrentTime(), state.lastT);
+      state.lastT = e.lastT; t = e.t; adNotice(e.ad);
     } else return;
     if (typeof t === "number") render(t);
   }, 150);
@@ -116,7 +113,7 @@
           if (state.pendingId && state.pendingId !== (state.player.getVideoData() || {}).video_id) state.player.cueVideoById(state.pendingId);
           state.pendingId = null;
         },
-        onStateChange: function (e) { if (state.timeOverride == null && e.data !== -1) render(state.player.getCurrentTime()); },
+        onStateChange: function (e) { if (state.timeOverride == null && (e.data === 1 || e.data === 2)) render(state.player.getCurrentTime()); },
         onError: function (e) { statusEl.textContent = "视频加载失败（错误码 " + e.data + "）"; }
       }
     });

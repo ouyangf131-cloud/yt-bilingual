@@ -48,3 +48,15 @@ test("parseYouTubeId", () => {
   assert.strictEqual(parseYouTubeId("hello"), null);
   assert.strictEqual(parseYouTubeId(""), null);
 });
+
+test("effectiveTime: hides subtitles during ads", () => {
+  const { effectiveTime } = require("../js/cues.js");
+  assert.deepStrictEqual(effectiveTime(1, 216, null), { t: 216, ad: false, lastT: 216 });
+  assert.deepStrictEqual(effectiveTime(2, 100, 99), { t: 100, ad: false, lastT: 100 });
+  assert.strictEqual(effectiveTime(-1, 5.2, null).t, -1);          // pre-roll ad clock
+  assert.strictEqual(effectiveTime(-1, 5.2, null).ad, true);
+  assert.strictEqual(effectiveTime(-1, 0, null).ad, false);        // not started yet
+  assert.strictEqual(effectiveTime(3, 215.3, 215).t, 215.3);       // genuine buffering
+  const mid = effectiveTime(3, 4.1, 215);                          // mid-roll ad: clock jumped
+  assert.strictEqual(mid.t, -1); assert.strictEqual(mid.ad, true); assert.strictEqual(mid.lastT, 215);
+});

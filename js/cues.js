@@ -30,7 +30,21 @@
     var m = s.match(/(?:youtu\.be\/|[?&]v=|\/(?:shorts|embed|live|v)\/)([A-Za-z0-9_-]{11})/);
     return m ? m[1] : null;
   }
-  var api = { findCueIndex: findCueIndex, displayIndex: displayIndex, parseYouTubeId: parseYouTubeId };
+  // Decide which time to show subtitles for, given YT player state and getCurrentTime().
+  // During ads the IFrame API keeps reporting the content's id/duration but
+  // getCurrentTime() returns the AD clock, with state -1 (pre-roll) or 3 (mid-roll,
+  // "buffering" while time advances). Real buffering doesn't advance time.
+  // lastT = last time seen while PLAYING/PAUSED. Returns {t, ad, lastT}; t=-1 hides subs.
+  function effectiveTime(playerState, t, lastT) {
+    if (playerState === 1 || playerState === 2) return { t: t, ad: false, lastT: t };
+    if (playerState === -1) return { t: -1, ad: t > 0.5, lastT: lastT };
+    if (playerState === 3) {
+      if (lastT == null || Math.abs(t - lastT) < 1.5) return { t: t, ad: false, lastT: lastT };
+      return { t: -1, ad: true, lastT: lastT };
+    }
+    return { t: t, ad: false, lastT: lastT }; // 0 ended, 5 cued
+  }
+  var api = { findCueIndex: findCueIndex, displayIndex: displayIndex, parseYouTubeId: parseYouTubeId, effectiveTime: effectiveTime };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.Cues = api;
 })(this);

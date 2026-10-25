@@ -28,10 +28,11 @@ npm i && npx playwright install chromium webkit
 npm test                                   # unit tests of sync logic + data validation
 python3 -m http.server 8000 & npm run e2e  # WebKit + Chromium, iPhone UA, 390/320/430 widths
 BASE_URL=https://ouyangf131-cloud.github.io/yt-bilingual/ npm run e2e
+BASE_URL=https://ouyangf131-cloud.github.io/yt-bilingual/ npm run play   # real playback + seeks, waits out ads
 ```
 
 ## Known limitations
 - In iOS native fullscreen the custom subtitles cannot be shown (fullscreen button is disabled via `fs=0`; rotate/fullscreen is not supported — watch inline).
-- YouTube may show a pre-roll ad; while it plays (player state -1) subtitles are hidden and a notice is shown. Seeking is ignored by YouTube during an ad.
+- YouTube may show pre-roll/mid-roll ads. During an ad the IFrame API reports the ad's clock via getCurrentTime(), so the page detects ads (state -1, or state 3 with a jumping clock — `effectiveTime` in js/cues.js), hides subtitles and shows “广告播放中”. Seeking is ignored by YouTube during an ad. Subtitles also blank briefly while buffering right after a seek.
 - Only videos with a prepared `data/<id>.json` get subtitles; there is no server-side generation.
 - The sample video's Chinese was translated by hand from TED's official English captions.
