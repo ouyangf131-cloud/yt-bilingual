@@ -1,0 +1,18 @@
+{
+  "name": "yt-bilingual",
+  "version": "1.0.0",
+  "description": "YouTube 中英双语字幕播放器 (iPhone Safari)",
+  "scripts": {
+    "test": "node --test test/unit.test.cjs",
+    "e2e": "node test/e2e.mjs",
+    "play": "node test/play-smoke.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "playwright": "^1.64.1"
+  },
+  "private": true
+}

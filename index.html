@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#111">
+<title>双语字幕播放器</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main id="app">
+  <header class="bar">
+    <h1>双语字幕播放器</h1>
+    <form id="loadForm" autocomplete="off">
+      <input id="urlInput" type="url" inputmode="url" placeholder="粘贴 YouTube 链接" aria-label="粘贴 YouTube 链接">
+      <button type="submit">加载</button>
+    </form>
+    <p id="msg" class="msg" role="status" hidden></p>
+  </header>
+
+  <section class="player-wrap"><div id="player"></div></section>
+
+  <section id="subs" class="subs" aria-live="polite">
+    <p id="subZh" class="zh"></p>
+    <p id="subEn" class="en"></p>
+  </section>
+
+  <section class="controls">
+    <button id="tglZh" class="tgl on" aria-pressed="true">中文</button>
+    <button id="tglEn" class="tgl on" aria-pressed="true">英文</button>
+    <button id="tglList" class="tgl" aria-pressed="false">字幕列表</button>
+  </section>
+  <p id="status" class="status">正在加载…</p>
+
+  <ol id="list" class="list" hidden></ol>
+
+  <footer class="foot">
+    提示：请在页面内播放（不要点全屏），全屏时 iPhone 无法显示双语字幕。点字幕列表中的句子可跳转。
+  </footer>
+</main>
+<script src="js/cues.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
