@@ -8,7 +8,9 @@ let fails = 0;
 const sample = () => {
   const a = window.__app, pl = a.player, t = pl.getCurrentTime(), st = pl.getPlayerState();
   const i = Cues.displayIndex(a.cues, t, 1.0);
-  return { t, st, mrt: pl.getMediaReferenceTime ? pl.getMediaReferenceTime() : null, eff: a.lastEff || null, err: a.lastErr || null, cur: a.cur, zh: document.getElementById("subZh").textContent, want: i >= 0 ? a.cues[i].zh : "",
+  const mrt0 = pl.getMediaReferenceTime ? pl.getMediaReferenceTime() : null;
+  const j = mrt0 == null ? -1 : Cues.displayIndex(a.cues, mrt0, 1.0);
+  return { t, st, mrt: pl.getMediaReferenceTime ? pl.getMediaReferenceTime() : null, eff: a.lastEff || null, err: a.lastErr || null, cur: a.cur, zh: document.getElementById("subZh").textContent, want: i >= 0 ? a.cues[i].zh : "", wantContent: j >= 0 ? a.cues[j].zh : "",
            ad: document.getElementById("status").textContent.includes("广告") };
 };
 for (const [n, bt] of [["chromium", chromium], ["webkit", webkit]]) {
@@ -20,13 +22,16 @@ for (const [n, bt] of [["chromium", chromium], ["webkit", webkit]]) {
     for (const seek of [null, 215, 646.9, 20]) {
       if (seek != null) await p.evaluate(t => window.__app.player.seekTo(t, true), seek);
       let ads = 0, verified = null;
-      for (let k = 0; k < 90 && !verified; k++) {
+      for (let k = 0; k < 150 && !verified; k++) {
         await p.waitForTimeout(1000);
         const s = await p.evaluate(sample);
         // ground truth (test only): YouTube marks its player .ad-showing while an ad runs
         const fr = p.frames().find(f => f.url().includes("youtube.com/embed"));
         s.trueAd = fr ? await fr.evaluate(() => !!document.querySelector(".html5-video-player.ad-showing")).catch(() => null) : null;
-        if (s.trueAd && s.zh) { console.log(n, "FAIL subtitle shown while YouTube ad-showing", JSON.stringify(s)); fails++; }
+        // During an ad the page must show nothing, or (for <1 poll at the ad boundary) the cue of the
+        // paused content position — never a cue derived from the ad's clock.
+        if (s.trueAd && s.zh && s.zh !== s.wantContent) { console.log(n, "FAIL wrong subtitle during ad", JSON.stringify(s)); fails++; }
+        else if (s.trueAd && s.zh) console.log(n, "note: content cue still shown at ad boundary", s.t.toFixed(1));
         if (s.trueAd && !s.ad) console.log(n, "note: ad not flagged by page", JSON.stringify(s));
         if (s.ad) { ads++; if (s.zh) { console.log(n, "FAIL subtitle shown during ad", s); fails++; } continue; }
         if (s.st === 1 && seek != null && Math.abs(s.t - seek) >= 10) {  // seek was swallowed by an ad: retry

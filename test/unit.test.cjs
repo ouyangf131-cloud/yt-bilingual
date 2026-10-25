@@ -67,3 +67,9 @@ test("effectiveTime: hides subtitles during ads", () => {
   assert.strictEqual(effectiveTime(3, 215.3, undefined, 215).t, 215.3);
   assert.strictEqual(effectiveTime(3, 4.1, undefined, 215).ad, true);
 });
+
+test("effectiveTime: ad boundary where content clock creeps but mrt is frozen", () => {
+  const { effectiveTime } = require("../js/cues.js");
+  assert.strictEqual(effectiveTime(1, 216.26, 215.26, 215.8).ad, true);  // observed in WebKit
+  assert.strictEqual(effectiveTime(1, 100.3, 100.0, 100).ad, false);     // normal ~0.3s lag
+});
