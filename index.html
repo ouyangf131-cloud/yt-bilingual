@@ -6,14 +6,16 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#111">
 <title>双语字幕播放器</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="favicon.svg">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <main id="app">
   <header class="bar">
     <h1>双语字幕播放器</h1>
-    <form id="loadForm" autocomplete="off">
-      <input id="urlInput" type="url" inputmode="url" placeholder="粘贴 YouTube 链接" aria-label="粘贴 YouTube 链接">
+    <form id="loadForm" autocomplete="off" novalidate>
+      <input id="urlInput" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="粘贴 YouTube 链接" aria-label="粘贴 YouTube 链接">
       <button type="submit">加载</button>
     </form>
     <p id="msg" class="msg" role="status" hidden></p>

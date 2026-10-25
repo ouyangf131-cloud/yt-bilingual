@@ -8,7 +8,8 @@ A static page that plays a YouTube video (IFrame Player API, `playsinline=1`) an
 - Subtitles come from `data/<videoId>.json` (`{id, cues:[{start,end,en,zh}]}`).
 - Sync: poll `player.getCurrentTime()` every 150 ms → binary search (`js/cues.js`). Stateless, so seeking/dragging stays in sync.
 - Paste any YouTube link → loads `data/<id>.json` if present, else shows “这个视频还没有准备字幕”.
-- `?v=<id>` in the URL selects a video.
+- `?v=<id>` in the URL selects a video. `data/index.json` lists prepared videos (checked before fetching, so unknown videos cause no 404).
+- The link box accepts full links, links without https://, and bare 11-character ids.
 
 ## Add another video
 ```bash
@@ -33,6 +34,6 @@ BASE_URL=https://ouyangf131-cloud.github.io/yt-bilingual/ npm run play   # real 
 
 ## Known limitations
 - In iOS native fullscreen the custom subtitles cannot be shown (fullscreen button is disabled via `fs=0`; rotate/fullscreen is not supported — watch inline).
-- YouTube may show pre-roll/mid-roll ads. During an ad, `getCurrentTime()` returns the AD's clock. The page compares it with `getMediaReferenceTime()` (an undocumented but exposed IFrame API method that stays on the content position) and hides subtitles + shows “广告播放中” when they disagree (fallback heuristics if that method ever disappears; see `effectiveTime` in js/cues.js). Seeking is ignored by YouTube while an ad plays. At the exact ad boundary a content subtitle may linger for <1 poll (150 ms).
+- YouTube may show pre-roll/mid-roll ads. During an ad, `getCurrentTime()` returns the AD's clock. The page compares it with `getMediaReferenceTime()` (an undocumented but exposed IFrame API method that stays on the content position) and hides subtitles + shows “广告播放中” when they disagree (fallback heuristics if that method ever disappears; see `effectiveTime` in js/cues.js). Seeking is ignored by YouTube while an ad plays. Subtitles are hidden immediately on non-playing state changes and polled every 100 ms, but the IFrame API pushes state/time to the page with a delay, so at a mid-roll ad boundary the current content subtitle can linger a few hundred ms (play test allows 400 ms; it never shows ad-clock-derived text).
 - Only videos with a prepared `data/<id>.json` get subtitles; there is no server-side generation.
 - The sample video's Chinese was translated by hand from TED's official English captions.

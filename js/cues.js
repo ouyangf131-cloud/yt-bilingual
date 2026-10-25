@@ -22,7 +22,7 @@
     while (lo <= hi) { var m = (lo + hi) >> 1; if (cues[m].end <= t) { prev = m; lo = m + 1; } else hi = m - 1; }
     return prev >= 0 && t - cues[prev].end < hold ? prev : -1;
   }
-  // Accepts youtu.be/ID, youtube.com/watch?v=ID, /shorts/ID, /embed/ID, /live/ID, or a bare 11-char id.
+  // Accepts (with or without https://) youtu.be/ID, youtube.com/watch?v=ID, /shorts/ID, /embed/ID, /live/ID, or a bare 11-char id.
   function parseYouTubeId(input) {
     if (!input) return null;
     var s = String(input).trim();
@@ -41,6 +41,10 @@
   function effectiveTime(playerState, t, mrt, lastT) {
     var hasMrt = typeof mrt === "number" && isFinite(mrt);
     if (hasMrt && Math.abs(t - mrt) > 0.8) return { t: -1, ad: true, lastT: lastT };
+    // Without mrt: clock jumped back to ~0 from a later position => likely an ad starting.
+    // (Costs at most the first 1.5s of subtitles if the user really dragged to the start.)
+    if (!hasMrt && lastT != null && lastT > 3 && t < 1.5)
+      return { t: -1, ad: true, lastT: lastT };
     if (playerState === -1) return { t: -1, ad: t > 0.5, lastT: lastT };
     if (playerState === 3 && !hasMrt && lastT != null && Math.abs(t - lastT) >= 1.5)
       return { t: -1, ad: true, lastT: lastT };

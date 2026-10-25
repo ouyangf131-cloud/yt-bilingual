@@ -73,3 +73,17 @@ test("effectiveTime: ad boundary where content clock creeps but mrt is frozen", 
   assert.strictEqual(effectiveTime(1, 216.26, 215.26, 215.8).ad, true);  // observed in WebKit
   assert.strictEqual(effectiveTime(1, 100.3, 100.0, 100).ad, false);     // normal ~0.3s lag
 });
+
+test("parseYouTubeId: scheme-less links and bare ids", () => {
+  for (const u of ["youtu.be/ny26teC-4bU", "www.youtube.com/watch?v=ny26teC-4bU", "youtube.com/watch?v=ny26teC-4bU", "m.youtube.com/shorts/ny26teC-4bU", " ny26teC-4bU "])
+    assert.strictEqual(parseYouTubeId(u), "ny26teC-4bU", u);
+  for (const u of ["not a link", "https://example.com/", "youtu.be/short"]) assert.strictEqual(parseYouTubeId(u), null, u);
+});
+
+test("effectiveTime: backward jump to ~0 with frozen mrt = ad start", () => {
+  const { effectiveTime } = require("../js/cues.js");
+  assert.strictEqual(effectiveTime(1, 0.35, 215.3, 215.6).ad, true);       // mrt still content -> ad
+  assert.strictEqual(effectiveTime(1, 0.3, 0.2, 215.6).ad, false);         // user dragged to start: mrt follows
+  assert.strictEqual(effectiveTime(1, 0.35, undefined, 215.6).ad, true);   // no mrt: backward jump -> ad
+  assert.strictEqual(effectiveTime(1, 2.0, undefined, 215.6).ad, false);   // ...only for the first 1.5s
+});

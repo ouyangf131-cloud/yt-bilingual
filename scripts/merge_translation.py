@@ -34,4 +34,10 @@ for a, b in zip(out, out[1:]):
     assert a["start"] < a["end"] <= b["start"], (a, b)
 os.makedirs("data", exist_ok=True)
 json.dump({"id": vid, "cues": out}, open(f"data/{vid}.json", "w", encoding="utf-8"), ensure_ascii=False, indent=0)
-print(f"wrote data/{vid}.json with {len(out)} cues")
+# manifest of prepared videos (page checks it before fetching data/<id>.json, avoiding 404s)
+man_path = "data/index.json"
+man = json.load(open(man_path, encoding="utf-8")) if os.path.exists(man_path) else {"videos": []}
+if vid not in man["videos"]:
+    man["videos"].append(vid)
+json.dump(man, open(man_path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+print(f"wrote data/{vid}.json with {len(out)} cues; manifest has {len(man['videos'])} videos")
