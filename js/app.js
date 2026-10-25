@@ -8,6 +8,11 @@
   window.__app = state; // for tests / debugging
 
   function fmt(t) { t = Math.floor(t); var m = Math.floor(t / 60), s = t % 60; return m + ":" + (s < 10 ? "0" : "") + s; }
+  var adShown = false;
+  function adNotice(on) {
+    if (on === adShown) return; adShown = on;
+    statusEl.textContent = on ? "广告播放中，字幕将在正片开始后显示" : (state.cues.length ? "字幕已加载：" + state.cues.length + " 句" : statusEl.textContent);
+  }
   function showMsg(text) { msg.textContent = text; msg.hidden = !text; }
 
   function render(t) {
@@ -91,8 +96,13 @@
   setInterval(function () {
     var t;
     if (state.timeOverride != null) t = state.timeOverride; // test hook: simulates getCurrentTime()
-    else if (state.ready && state.player && state.player.getCurrentTime) t = state.player.getCurrentTime();
-    else return;
+    else if (state.ready && state.player && state.player.getCurrentTime) {
+      // While a pre-roll ad plays, the IFrame API reports state -1 (unstarted) and
+      // getCurrentTime() returns the AD's time — hide subtitles then.
+      var ps = state.player.getPlayerState ? state.player.getPlayerState() : 1;
+      t = ps === -1 ? -1 : state.player.getCurrentTime();
+      adNotice(ps === -1 && state.player.getCurrentTime() > 0);
+    } else return;
     if (typeof t === "number") render(t);
   }, 150);
 
@@ -106,7 +116,7 @@
           if (state.pendingId && state.pendingId !== (state.player.getVideoData() || {}).video_id) state.player.cueVideoById(state.pendingId);
           state.pendingId = null;
         },
-        onStateChange: function () { if (state.timeOverride == null) render(state.player.getCurrentTime()); },
+        onStateChange: function (e) { if (state.timeOverride == null && e.data !== -1) render(state.player.getCurrentTime()); },
         onError: function (e) { statusEl.textContent = "视频加载失败（错误码 " + e.data + "）"; }
       }
     });

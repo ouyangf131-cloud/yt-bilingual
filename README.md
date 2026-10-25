@@ -32,5 +32,6 @@ BASE_URL=https://ouyangf131-cloud.github.io/yt-bilingual/ npm run e2e
 
 ## Known limitations
 - In iOS native fullscreen the custom subtitles cannot be shown (fullscreen button is disabled via `fs=0`; rotate/fullscreen is not supported — watch inline).
+- YouTube may show a pre-roll ad; while it plays (player state -1) subtitles are hidden and a notice is shown. Seeking is ignored by YouTube during an ad.
 - Only videos with a prepared `data/<id>.json` get subtitles; there is no server-side generation.
 - The sample video's Chinese was translated by hand from TED's official English captions.
