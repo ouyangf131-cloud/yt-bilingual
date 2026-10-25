@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#111">
@@ -21,7 +22,18 @@
     <p id="msg" class="msg" role="status" hidden></p>
   </header>
 
-  <section class="player-wrap"><div id="player"></div></section>
+  <section class="player-wrap" id="playerWrap"><div id="player"></div>
+    <div id="playerErr" class="player-err" role="alert" hidden>
+      <p id="playerErrMsg">视频加载失败：可能连不上 YouTube，请检查网络或 VPN 后刷新</p>
+      <p id="playerErrDiag" class="diag"></p>
+      <div class="err-actions">
+        <button id="retryBtn" type="button">重试</button>
+        <button id="plainBtn" type="button" class="secondary">简易播放器</button>
+        <a id="openYt" class="ytlink" href="https://www.youtube.com/watch?v=ny26teC-4bU" target="_blank" rel="noopener">在 YouTube 打开</a>
+      </div>
+      <p class="hint">简易播放器和 YouTube App 中无法同步字幕，可在下方「字幕列表」对照阅读。</p>
+    </div>
+  </section>
 
   <section id="subs" class="subs" aria-live="polite">
     <p id="subZh" class="zh"></p>

@@ -107,6 +107,42 @@ for (const [name, bt] of [["webkit", webkit], ["chromium", chromium]]) {
     ok(errors.length === 0, "no page JS errors " + errors.join("; "));
     await ctx.close();
   }
+  // YouTube unreachable (e.g. no VPN in mainland China): watchdog must show message + retry within ~9 s
+  for (const vp of [sizes[0], sizes[1]]) {
+    const ctx = await browser.newContext({ viewport: vp, userAgent: UA, isMobile: name === "chromium", hasTouch: true });
+    const page = await ctx.newPage();
+    const errors = []; page.on("pageerror", e => errors.push(String(e)));
+    await page.route(/youtube\.com|ytimg\.com|googlevideo\.com|youtube-nocookie\.com|ggpht\.com/, r => r.abort());
+    const t0 = Date.now();
+    await page.goto(BASE, { waitUntil: "domcontentloaded" });
+    let shown = false;
+    try { await page.waitForSelector("#playerErr:not([hidden])", { timeout: 9000 }); shown = true; } catch (e) {}
+    const dt = Date.now() - t0;
+    const msg = shown ? await page.textContent("#playerErrMsg") : "";
+    const diag = shown ? await page.textContent("#playerErrDiag") : "";
+    ok(shown && msg.includes("视频加载失败") && msg.includes("VPN"), `blocked YouTube ${vp.width}x${vp.height}: message in ${dt} ms`);
+    ok(/API 脚本/.test(diag), `diagnostic line: "${diag}"`);
+    ok(shown && await page.isVisible("#retryBtn") && await page.isVisible("#openYt") && await page.isVisible("#plainBtn"), "重试 / 简易播放器 / 在 YouTube 打开 visible");
+    ok((await page.getAttribute("#openYt", "href")) === "https://www.youtube.com/watch?v=ny26teC-4bU", "在 YouTube 打开 link");
+    const rb = await page.$eval("#retryBtn", e => { const r = e.getBoundingClientRect(), w = e.closest(".player-wrap").getBoundingClientRect(); return r.bottom <= w.bottom + 1 && r.top >= w.top - 1; });
+    ok(rb, "retry button inside player area");
+    await page.waitForFunction(() => window.__app.cues.length === 168);
+    await page.click("#tglList");
+    ok(await page.isVisible("#list li:nth-child(5)"), "subtitle list still browsable");
+    await page.click("#tglList");
+    const nav0 = await page.evaluate(() => performance.getEntriesByType("navigation").length + ":" + (window.__marker = 1));
+    await page.evaluate(() => { window.__hid = false; new MutationObserver(() => { if (document.getElementById("playerErr").hidden) window.__hid = true; }).observe(document.getElementById("playerErr"), { attributes: true }); });
+    await page.click("#retryBtn");
+    ok(await page.evaluate(() => window.__hid), "retry hides message and restarts loading");
+    let again = false;
+    try { await page.waitForSelector("#playerErr:not([hidden])", { timeout: 10000 }); again = true; } catch (e) {}
+    ok(again && await page.evaluate(() => window.__marker === 1 && window.__app.retries === 1), "retry without page reload, message returns while still blocked");
+    await page.evaluate(() => window.__app.playerFailedFn("错误码 153：缺少来源信息（referrer 被屏蔽）"));
+    ok((await page.textContent("#playerErrDiag")).includes("153"), "error-code diagnostic shows raw code");
+    ok(errors.length === 0, "no page JS errors " + errors.join("; "));
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/${name}-${vp.width}-blocked.jpg`, type: "jpeg", quality: 60 });
+    await ctx.close();
+  }
   await browser.close();
 }
 console.log(fails ? `\n${fails} FAILED` : "\nALL PASSED");
