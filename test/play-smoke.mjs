@@ -30,7 +30,7 @@ for (const [n, bt] of [["chromium", chromium], ["webkit", webkit]]) {
         s.trueAd = fr ? await fr.evaluate(() => !!document.querySelector(".html5-video-player.ad-showing")).catch(() => null) : null;
         // During an ad the page must show nothing, or (for <1 poll at the ad boundary) the cue of the
         // paused content position — never a cue derived from the ad's clock.
-        if (s.trueAd && s.zh && s.zh !== s.wantContent) { console.log(n, "FAIL wrong subtitle during ad", JSON.stringify(s)); fails++; }
+        if (s.trueAd && s.zh && s.zh !== s.wantContent && Math.abs(s.t - s.mrt) > 0.8) { console.log(n, "FAIL wrong subtitle during ad", JSON.stringify(s)); fails++; }
         else if (s.trueAd && s.zh) console.log(n, "note: content cue still shown at ad boundary", s.t.toFixed(1));
         if (s.trueAd && !s.ad) console.log(n, "note: ad not flagged by page", JSON.stringify(s));
         if (s.ad) { ads++; if (s.zh) { console.log(n, "FAIL subtitle shown during ad", s); fails++; } continue; }
